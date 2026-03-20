@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div class="toolbar">
+    <button id="btn-clear" title="Clear log">&#x1D5EB; Clear</button>
+    <input id="filter-url" type="text" placeholder="Filter by URL..." />
+    <select id="filter-method">
+      <option value="">All Methods</option>
+      <option value="GET">GET</option>
+      <option value="POST">POST</option>
+      <option value="PUT">PUT</option>
+      <option value="PATCH">PATCH</option>
+      <option value="DELETE">DELETE</option>
+      <option value="OPTIONS">OPTIONS</option>
+    </select>
+    <select id="filter-status">
+      <option value="">All Statuses</option>
+      <option value="2xx">2xx</option>
+      <option value="3xx">3xx</option>
+      <option value="4xx">4xx</option>
+      <option value="5xx">5xx</option>
+      <option value="error">Errors</option>
+    </select>
+    <div class="toolbar-right">
+      <button id="btn-export-har" title="Export as HAR">Export HAR</button>
+      <button id="btn-export-json" title="Export as JSON">Export JSON</button>
+      <span id="request-count">0 requests</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="request-list" id="request-list">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-status">Status</th>
+            <th class="col-method">Method</th>
+            <th class="col-url">URL</th>
+            <th class="col-type">Type</th>
+            <th class="col-size">Size</th>
+            <th class="col-time">Time</th>
+          </tr>
+        </thead>
+        <tbody id="request-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="detail-pane" id="detail-pane" style="display:none;">
+      <div class="detail-header">
+        <button id="btn-close-detail" title="Close">&times;</button>
+        <span id="detail-title"></span>
+        <button id="btn-copy-curl" title="Copy as cURL">Copy cURL</button>
+      </div>
+      <div class="detail-tabs">
+        <button class="tab active" data-tab="headers">Headers</button>
+        <button class="tab" data-tab="request">Request</button>
+        <button class="tab" data-tab="response">Response</button>
+        <button class="tab" data-tab="timing">Timing</button>
+      </div>
+      <div class="detail-content" id="detail-content"></div>
+    </div>
+  </div>
+
+  <script src="panel.js"></script>
+</body>
+</html>

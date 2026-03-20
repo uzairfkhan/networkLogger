@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <h1>NetRecall</h1>
+
+    <div class="section">
+      <label class="label">Status</label>
+      <div class="row">
+        <button id="btn-toggle" class="btn-primary">Pause</button>
+        <button id="btn-clear" class="btn-danger">Clear All</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <label class="label">Filter Mode</label>
+      <select id="filter-mode">
+        <option value="off">Off (log all)</option>
+        <option value="whitelist">Whitelist</option>
+        <option value="blacklist">Blacklist</option>
+      </select>
+    </div>
+
+    <div class="section" id="domain-section" style="display:none;">
+      <label class="label">Domains</label>
+      <div class="domain-input-row">
+        <input id="domain-input" type="text" placeholder="example.com" />
+        <button id="btn-add-domain">Add</button>
+      </div>
+      <ul id="domain-list"></ul>
+    </div>
+
+    <div class="section">
+      <label class="label">Buffer Duration (minutes)</label>
+      <input id="buffer-minutes" type="number" min="1" max="60" value="20" />
+    </div>
+
+    <div class="section">
+      <label class="label">Max Body Size (KB)</label>
+      <input id="max-body-size" type="number" min="1" max="1024" value="100" />
+    </div>
+
+    <div class="section stats">
+      <span id="stats-text">Loading...</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
