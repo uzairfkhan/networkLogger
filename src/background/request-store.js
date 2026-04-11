@@ -3,6 +3,7 @@
  */
 
 import { LIMITS, STORAGE_KEYS, SKIP_BODY_TYPES } from '../shared/constants.js';
+import { shouldLog } from './domain-filter.js';
 
 /** @type {Map<string, object>} */
 const entries = new Map();
@@ -79,6 +80,7 @@ export function mergeBody(bodyData) {
   }
 
   // No matching webRequest entry — create standalone entry from content script
+  if (!shouldLog(bodyData.url)) return;
   const id = bodyData.id || crypto.randomUUID();
   const entry = {
     id,

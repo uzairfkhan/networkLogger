@@ -3,7 +3,7 @@
  */
 
 import { MSG, DEFAULTS, ALARMS, STORAGE_KEYS } from '../shared/constants.js';
-import { setFilter } from './domain-filter.js';
+import { setFilter, shouldLog } from './domain-filter.js';
 import { register as registerWebRequest } from './web-request-listener.js';
 import * as store from './request-store.js';
 
@@ -26,6 +26,7 @@ async function initialize() {
   paused = currentSettings.paused || false;
   setFilter(currentSettings.filterMode, currentSettings.domainList);
   await store.init(currentSettings);
+  store.cleanup();
 
   // Register webRequest listeners
   registerWebRequest();
@@ -61,6 +62,7 @@ async function handleMessage(message, sender) {
     case MSG.BODY_CAPTURED: {
       if (paused) return { ok: true };
       const bodyData = message.data;
+      if (!shouldLog(bodyData.url)) return { ok: true };
       if (sender.tab) bodyData.tabId = sender.tab.id;
       store.mergeBody(bodyData);
       return { ok: true };
@@ -81,6 +83,7 @@ async function handleMessage(message, sender) {
       paused = currentSettings.paused || false;
       setFilter(currentSettings.filterMode, currentSettings.domainList);
       store.updateSettings(currentSettings);
+      store.cleanup();
       await chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: currentSettings });
       updateBadge();
       return { ok: true };

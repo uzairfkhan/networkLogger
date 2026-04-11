@@ -117,6 +117,7 @@ function onCompleted(details) {
 }
 
 function onErrorOccurred(details) {
+  if (!shouldLog(details.url)) return;
   if (isExtensionRequest(details.url)) return;
 
   const id = String(details.requestId);
