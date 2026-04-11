@@ -117,6 +117,14 @@ export function getAll() {
  */
 export function clear() {
   entries.clear();
+  // Notify subscribers so live panels drop their local view.
+  for (const port of subscribers) {
+    try {
+      port.postMessage({ type: 'ENTRIES_CLEARED' });
+    } catch {
+      subscribers.delete(port);
+    }
+  }
   persist();
 }
 
@@ -225,13 +233,27 @@ async function persist() {
     await chrome.storage.session.set({ [STORAGE_KEYS.ENTRIES]: data });
   } catch (e) {
     console.warn('[NetworkLogger] Failed to persist store:', e);
-    // If we hit quota, aggressively evict bodies and retry
-    evictBodiesUnderPressure();
+    // Hit quota (or transient error). Evict ALL bodies — metadata is cheap,
+    // bodies are where the bytes actually are. evictBodiesUnderPressure()'s
+    // threshold check is wrong here because we know we already blew the quota.
+    for (const [, entry] of entries) {
+      if (entry.requestBody) entry.requestBody = null;
+      if (entry.responseBody) entry.responseBody = null;
+    }
     try {
       const data = Array.from(entries.values());
       await chrome.storage.session.set({ [STORAGE_KEYS.ENTRIES]: data });
     } catch {
-      // give up for this cycle
+      // Still failing with only metadata — drop oldest half of entries.
+      const sorted = Array.from(entries.values()).sort((a, b) => a.timestamp - b.timestamp);
+      const dropCount = Math.ceil(sorted.length / 2);
+      for (let i = 0; i < dropCount; i++) entries.delete(sorted[i].id);
+      try {
+        const data = Array.from(entries.values());
+        await chrome.storage.session.set({ [STORAGE_KEYS.ENTRIES]: data });
+      } catch {
+        // give up for this cycle
+      }
     }
   }
 }

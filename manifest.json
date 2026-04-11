@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NetRecall",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Silently captures network requests in a rolling 20-minute buffer. Open DevTools to view, filter, and export captured requests.",
   "permissions": [
     "webRequest",

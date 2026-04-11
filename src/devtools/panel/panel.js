@@ -18,36 +18,54 @@
   let selectedId = null;
   let activeTab = 'headers';
 
-  // --- Load initial data ---
+  // --- Subscribe FIRST, snapshot SECOND ---
+  // Otherwise any entry that arrives between the GET_ENTRIES response and the
+  // port connect is either missed or duplicated (snapshot replaces entries[]
+  // wholesale). Buffer incoming events while the snapshot is in flight and
+  // reconcile by id when it lands.
 
-  chrome.runtime.sendMessage({ type: 'GET_ENTRIES' }, (response) => {
-    if (response?.entries) {
-      entries = response.entries;
-      render();
-    }
-  });
-
-  // --- Subscribe to live updates ---
+  let snapshotArrived = false;
+  const pendingEvents = [];
 
   const port = chrome.runtime.connect({ name: 'networkLogger_devtools' });
 
   port.onMessage.addListener((msg) => {
+    if (!snapshotArrived) {
+      pendingEvents.push(msg);
+      return;
+    }
+    applyMessage(msg);
+  });
+
+  chrome.runtime.sendMessage({ type: 'GET_ENTRIES' }, (response) => {
+    if (response?.entries) {
+      entries = response.entries;
+    }
+    snapshotArrived = true;
+    for (const msg of pendingEvents) applyMessage(msg);
+    pendingEvents.length = 0;
+    render();
+  });
+
+  function applyMessage(msg) {
     if (msg.type === 'ENTRY_ADDED') {
-      entries.push(msg.entry);
+      const idx = entries.findIndex(e => e.id === msg.entry.id);
+      if (idx >= 0) entries[idx] = msg.entry;
+      else entries.push(msg.entry);
       render();
     } else if (msg.type === 'ENTRY_UPDATED') {
       const idx = entries.findIndex(e => e.id === msg.entry.id);
-      if (idx >= 0) {
-        entries[idx] = msg.entry;
-      } else {
-        entries.push(msg.entry);
-      }
+      if (idx >= 0) entries[idx] = msg.entry;
+      else entries.push(msg.entry);
       render();
-      if (selectedId === msg.entry.id) {
-        renderDetail(msg.entry);
-      }
+      if (selectedId === msg.entry.id) renderDetail(msg.entry);
+    } else if (msg.type === 'ENTRIES_CLEARED') {
+      entries = [];
+      selectedId = null;
+      detailPane.classList.remove('open');
+      render();
     }
-  });
+  }
 
   // --- Filters ---
 

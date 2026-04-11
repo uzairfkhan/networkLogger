@@ -10,6 +10,12 @@ import * as store from './request-store.js';
 let currentSettings = { ...DEFAULTS };
 let paused = false;
 
+// --- Top-level synchronous registration (MV3 service worker wakeup requirement) ---
+// webRequest listeners MUST be attached synchronously on every SW startup so that
+// events that wake the worker are delivered. Registering inside an async init
+// after an `await` drops events that fire before the await resolves.
+registerWebRequest();
+
 // --- Initialization ---
 
 async function initialize() {
@@ -27,9 +33,6 @@ async function initialize() {
   setFilter(currentSettings.filterMode, currentSettings.domainList);
   await store.init(currentSettings);
   store.cleanup();
-
-  // Register webRequest listeners
-  registerWebRequest();
 
   // Set up periodic cleanup alarm
   chrome.alarms.create(ALARMS.CLEANUP, { periodInMinutes: 1 });

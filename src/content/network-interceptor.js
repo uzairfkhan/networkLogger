@@ -38,28 +38,52 @@
     let url, method, requestBody, requestHeaders;
 
     try {
-      const request = args[0] instanceof Request ? args[0] : new Request(...args);
-      url = request.url;
-      method = request.method;
-      requestHeaders = {};
-      request.headers.forEach((v, k) => { requestHeaders[k] = v; });
-
-      // Clone to read body without consuming
       if (args[0] instanceof Request) {
+        const request = args[0];
+        url = request.url;
+        method = request.method;
+        requestHeaders = {};
+        request.headers.forEach((v, k) => { requestHeaders[k] = v; });
+        // Clone to read body without consuming the original
         try {
-          const cloned = args[0].clone();
+          const cloned = request.clone();
           requestBody = await cloned.text();
-        } catch { /* body already consumed */ }
-      } else if (args[1]?.body) {
-        const b = args[1].body;
-        if (typeof b === 'string') {
-          requestBody = b;
-        } else if (b instanceof URLSearchParams) {
-          requestBody = b.toString();
-        } else if (b instanceof FormData) {
-          requestBody = '[FormData]';
-        } else {
-          try { requestBody = JSON.stringify(b); } catch { requestBody = '[unreadable]'; }
+        } catch { /* body already consumed or unreadable */ }
+      } else {
+        // String/URL input — extract directly from args WITHOUT constructing a
+        // Request. Constructing `new Request(...args)` would lock a ReadableStream
+        // body in init, causing the subsequent originalFetch call to fail.
+        url = typeof args[0] === 'string' ? args[0] : String(args[0]);
+        const init = args[1] || {};
+        method = (init.method || 'GET').toUpperCase();
+        requestHeaders = {};
+        if (init.headers) {
+          if (init.headers instanceof Headers) {
+            init.headers.forEach((v, k) => { requestHeaders[k] = v; });
+          } else if (Array.isArray(init.headers)) {
+            for (const [k, v] of init.headers) requestHeaders[k] = v;
+          } else {
+            for (const k of Object.keys(init.headers)) requestHeaders[k] = init.headers[k];
+          }
+        }
+        const b = init.body;
+        if (b != null) {
+          if (typeof b === 'string') {
+            requestBody = b;
+          } else if (b instanceof URLSearchParams) {
+            requestBody = b.toString();
+          } else if (b instanceof FormData) {
+            requestBody = '[FormData]';
+          } else if (typeof ReadableStream !== 'undefined' && b instanceof ReadableStream) {
+            // Do not touch — reading would lock the stream and break the real fetch.
+            requestBody = '[ReadableStream]';
+          } else if (b instanceof Blob) {
+            requestBody = '[Blob ' + b.size + ' bytes]';
+          } else if (b instanceof ArrayBuffer || ArrayBuffer.isView(b)) {
+            requestBody = '[binary ' + (b.byteLength || 0) + ' bytes]';
+          } else {
+            try { requestBody = JSON.stringify(b); } catch { requestBody = '[unreadable]'; }
+          }
         }
       }
     } catch {
